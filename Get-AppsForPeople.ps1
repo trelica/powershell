@@ -3,7 +3,9 @@ param (
     [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline = $true)][PSTypeName('Trelica.Context')]$Context,
     [Parameter(Mandatory = $true, Position = 2)][String]$Filter
 )
-<# 
+<#
+    .SYNOPSIS
+    Exports people and associated app data to CSV, based on a filter.
     .EXAMPLE
     Run this passing in a Trelica Context:
     Initialize-TrelicaCredentials | Get-TrelicaContext | .\Get-AppsForPeople.ps1 -Filter 'email sw "pbs-"' | Export-Csv -Path .\appsForPeople.csv
