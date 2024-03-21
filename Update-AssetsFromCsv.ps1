@@ -25,6 +25,11 @@ $duplicates | ForEach-Object {
 # Group data by the "Trelica ID" column and filter groups with a count equal to one
 $uniqueEntries = $data | Group-Object -Property 'Trelica ID' | Where-Object { $_.Count -eq 1 }
 
+# Read in the custom fields schema so we can map dropdown option labels to ids
+$customfields = (Invoke-TrelicaRequest -Context $Context -Path "/api/assets/v1/customfields" | ConvertFrom-Json)
+$user_asset_stored_map = GetLabelToIdMap $customfields.results "user_asset_stored"
+$user_status_map = GetLabelToIdMap $customfields.results "user_status"
+
 # Process the unique entries
 $uniqueEntries | ForEach-Object {
     $row = ($_.Group | Select-Object -First 1)  # Process only the first entry in each group (if multiple)
@@ -33,8 +38,8 @@ $uniqueEntries | ForEach-Object {
 
     $data = [PSCustomObject]@{
         customFields = @{
-            user_asset_stored = $row."In Office Location"
-            user_status       = $row."Device Status"
+            user_asset_stored = $user_asset_stored_map[$row."In Office Location"]
+            user_status       = $user_status_map[$row."Device Status"]
         }
     }
     $json = ($data | ConvertTo-Json -Depth 6);
@@ -44,4 +49,15 @@ $uniqueEntries | ForEach-Object {
     Write-Output "* PATCH: $json"
     $asset = Invoke-TrelicaRequest -Context $Context -Path "/api/assets/v1/$($id)" -Method "PATCH" -PostData $json
     Write-Output "* Result: $($asset | ConvertTo-Json -Depth 6)"
+}
+
+function GetLabelToIdMap($results, $fieldName) {
+    $dropdownOptions = $results | Where-Object { $_.lookupKey -eq $fieldName }
+
+    $labelToIdMap = @{}
+    foreach ($option in $dropdownOptions.options) {
+        $labelToIdMap[$option.label] = $option.id
+    }
+
+    return $labelToIdMap
 }
