@@ -187,6 +187,8 @@ foreach ($workflowName in $DEPROVISIONING_WORKFLOW_LIST) {
     ProcessWorkflow -Context $Context -Name $workflowName -ProcessWith ProcessDeprovisioningWorkflowRun
 }
 
+Disconnect-ExchangeOnline -Confirm:$false
+
 Write-Host
 Write-Host "****"
 Write-Host "DONE"
