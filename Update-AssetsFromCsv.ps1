@@ -11,6 +11,9 @@ param (
     Initialize-TrelicaCredentials | Get-TrelicaContext | ./Update-AssetsFromCsv.ps1 -CsvFilePath '~/tmp/assets.csv'
 #>
 
+# stop on first error
+$ErrorActionPreference = "Stop"
+
 # Load the CSV file
 $data = Import-Csv -Path $CsvFilePath 
 
