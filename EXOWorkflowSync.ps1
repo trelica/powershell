@@ -66,12 +66,12 @@ Function ProcessDeprovisioningWorkflowRun() {
             return $false
         }
 
-        # Declare the distributionLists variable outside of the try-catch block
-        $distributionLists = @()
+        # Declare the distributionGroups variable outside of the try-catch block
+        $distributionGroups = @()
 
         try {
             # Attempt to get the distribution lists
-            $distributionLists = Get-DistributionList
+            $distributionGroups = Get-DistributionGroup -resultsize unlimited |  Where-Object { !$_.GroupType.contains("SecurityEnabled") }
         }
         catch {
             # Handle error if fetching distribution lists fails
@@ -81,15 +81,17 @@ Function ProcessDeprovisioningWorkflowRun() {
         }
 
         # If the distribution lists were fetched, iterate over each and try removing the group
-        foreach ($group in $distributionLists) {
+        foreach ($group in $distributionGroups) {
             try {
-                # Attempt to remove the group
-                Remove-DistributionGroup -Identity $group.Identity
-                Write-Host "Successfully removed group: $($group.Name)"
+                #Check if the Distribution List contains the particular user
+                If ((Get-DistributionGroupMember $group.Guid | Select-Object -Expand PrimarySmtpAddress) -contains $email) {
+                    Remove-DistributionGroupMember -Identity $group.Guid -Member $email -Confirm:$false
+                    Write-Host "Removed user from group '$group'"
+                }
             }
             catch {
                 # Handle error and include group name in the error message
-                Write-Host "Failed to remove group: $($group.Name). Error: $_"
+                Write-Host "Failed to remove from group: $($group.Name). Error: $_"
             }
         }
     }
