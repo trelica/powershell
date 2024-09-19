@@ -62,11 +62,36 @@ Function ProcessDeprovisioningWorkflowRun() {
             Set-Mailbox $email -Type Shared
         }
         catch {
-            Write-Host "ERROR: An error marking the mailbox as shared - aborting:"
-            Write-Host $_
+            Write-Host "ERROR: An error marking the mailbox as shared - Aborting: $_"
             return $false
         }
 
+        # Declare the distributionLists variable outside of the try-catch block
+        $distributionLists = @()
+
+        try {
+            # Attempt to get the distribution lists
+            $distributionLists = Get-DistributionList
+        }
+        catch {
+            # Handle error if fetching distribution lists fails
+            Write-Host "Failed to retrieve distribution lists. Error: $_"
+            # Optionally exit the script if this is a critical failure
+            return
+        }
+
+        # If the distribution lists were fetched, iterate over each and try removing the group
+        foreach ($group in $distributionLists) {
+            try {
+                # Attempt to remove the group
+                Remove-DistributionGroup -Identity $group.Identity
+                Write-Host "Successfully removed group: $($group.Name)"
+            }
+            catch {
+                # Handle error and include group name in the error message
+                Write-Host "Failed to remove group: $($group.Name). Error: $_"
+            }
+        }
     }
 
     # now return the URI of the action we want
