@@ -56,10 +56,18 @@ Function ProcessDeprovisioningWorkflowRun() {
     }
 
     $email = $person.email
+    $lineManager = $person.lineManager.email
         
     if (-not $DRY_RUN) {
         try {
-            Set-Mailbox $email -Type Shared
+            # Convert to shared mailbox
+            $null = Set-Mailbox $email -Type Shared
+            
+            # Assign Full Access permission
+            $null = Add-MailboxPermission -Identity $email -User $lineManager -AccessRights FullAccess -InheritanceType All
+
+            # Assign Send As permission
+            $null = Add-RecipientPermission -Identity $email -Trustee $lineManager -AccessRights SendAs -Confirm:$false
         }
         catch {
             Write-Host "ERROR: An error marking the mailbox as shared - Aborting: $_"
@@ -85,7 +93,7 @@ Function ProcessDeprovisioningWorkflowRun() {
             try {
                 #Check if the Distribution List contains the particular user
                 If ((Get-DistributionGroupMember $group.Guid | Select-Object -Expand PrimarySmtpAddress) -contains $email) {
-                    Remove-DistributionGroupMember -Identity $group.Guid -Member $email -Confirm:$false
+                    $null = Remove-DistributionGroupMember -Identity $group.Guid -Member $email -Confirm:$false
                     Write-Host "Removed user from group '$group'"
                 }
             }
@@ -128,6 +136,7 @@ Function ProcessWorkflowRuns() {
     
         # report back to Trelica that we're done
         Write-Host "POSTing '$ActionName' action for run ID $($Run.id): '$($Run.name)'..."
+        Write-Host " url = $($successUri)"
         if ($DRY_RUN) {
             Write-Host "^^^^ DRY RUN: NOT EXECUTING"
         }
