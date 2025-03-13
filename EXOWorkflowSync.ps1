@@ -56,7 +56,7 @@ Function ProcessDeprovisioningWorkflowRun() {
     }
 
     $email = $person.email
-    $lineManager = $person.lineManager.email
+    $lineManager = $person.lineManager.email    
         
     if (-not $DRY_RUN) {
         try {
